@@ -15,7 +15,7 @@ to:
 -   Database: PostgreSQL
 -   ORM: SQLAlchemy
 -   Migrations: Alembic
--   Authentication: JWT (OAuth2 Password Flow)
+-   Authentication: JWT-based authentication with Bearer tokens
 -   Containerization: Docker & Docker Compose
 
 ------------------------------------------------------------------------
@@ -76,13 +76,14 @@ docker compose up --build
 
 Migrations run automatically on container startup using:
 
-alembic upgrade head
+- alembic upgrade head
 
 ------------------------------------------------------------------------
 
 ## 5. Test Credentials
 
-Email: test@example.com Password: password123
+- Email: test@example.com 
+- Password: password123
 
 ------------------------------------------------------------------------
 
@@ -159,8 +160,7 @@ docker compose up
 - These were used during development to create and manage migrations.
 - All migrations are already included in the repository, and database schema is automatically applied on startup using Alembic.
 
-### Generate migrations (already included in repo)
-
+### Generate migrations
 ```
 docker compose exec backend alembic revision --autogenerate -m "message"
 ```
