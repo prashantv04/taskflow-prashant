@@ -172,8 +172,15 @@ docker compose exec backend alembic upgrade head
 
 Seed database manually (optional)
 
+Windows (PowerShell): 
 ```
 Get-Content backend/seed.sql | docker compose exec -T db psql -U postgres -d taskflow
 ```
+
+Linux/macOS equivalent:
+
+``
+cat backend/seed.sql | docker compose exec -T db psql -U postgres -d taskflow
+``
 ------------------------------------------------------------------------
 Thank you for reviewing this submission.
