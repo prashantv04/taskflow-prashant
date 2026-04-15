@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+.env
+
+# IDE
+.idea/
+.vscode/
+
+# Docker
+*.log
+
+# Migrations cache
+alembic/__pycache__/
+
+# OS
+.DS_Store
+
+# virtual environment
+venv/
+env/
+.venv/
