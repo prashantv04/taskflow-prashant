@@ -177,10 +177,10 @@ Windows (PowerShell):
 Get-Content backend/seed.sql | docker compose exec -T db psql -U postgres -d taskflow
 ```
 
-Linux/macOS equivalent:
+macOS/Linux equivalent:
 
-``
+```
 cat backend/seed.sql | docker compose exec -T db psql -U postgres -d taskflow
-``
+```
 ------------------------------------------------------------------------
 Thank you for reviewing this submission.
