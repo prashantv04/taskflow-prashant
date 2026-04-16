@@ -2,59 +2,97 @@
 
 ## 1. Overview
 
-TaskFlow is a minimal task management backend system that allows users
-to:
+TaskFlow is a minimal yet production-structured task management backend that allows users to:
 
--   Register and log in with JWT authentication
--   Create and manage projects
--   Create, update, assign, and delete tasks within projects
+- Register and log in with JWT authentication
+- Create and manage projects
+- Create, update, assign, and delete tasks within projects
+
+The focus of this project is on clean architecture, correct API design, and explicit tradeoffs rather than feature completeness.
 
 ### Tech Stack
 
--   Backend: FastAPI (Python)
--   Database: PostgreSQL
--   ORM: SQLAlchemy
--   Migrations: Alembic
--   Authentication: JWT-based authentication with Bearer tokens
--   Containerization: Docker & Docker Compose
+- Backend: FastAPI (Python)
+- Database: PostgreSQL
+- ORM: SQLAlchemy
+- Migrations: Alembic
+- Authentication: JWT-based authentication with Bearer tokens
+- Containerization: Docker & Docker Compose
 
-------------------------------------------------------------------------
+---
 
 ## 2. Architecture Decisions
 
-### Structure
+### Layered Architecture
 
-```
-app/ 
-├── api/      # Routes (controllers) 
-├── services/ # Business logic 
-├── db/       # Models & database setup 
-├── schemas/  # Pydantic schemas 
-├── core/     # Config & security 
-├── utils/    # Helpers & error handling
+The application is structured into clear layers:
 
-```
+- Routes (API layer): handle HTTP requests and responses
+- Services (business logic): enforce rules like ownership and validation
+- Database layer: SQLAlchemy models and persistence
+- Schemas: request/response validation via Pydantic
 
-### Key Decisions
+Business logic is intentionally kept out of route handlers to avoid tightly coupled code and improve long-term maintainability.
 
--   FastAPI chosen for speed and built-in validation
--   SQLAlchemy + Alembic for proper schema control
--   Layered architecture for separation of concerns
--   JWT authentication with 24-hour expiry
+---
 
-### Tradeoffs
+### Authentication
 
--   No refresh tokens (kept simple)
--   No caching layer
--   Minimal validation abstraction
+JWT-based stateless authentication is used.
 
-------------------------------------------------------------------------
+- Tokens contain `user_id` and `email`
+- Expiry is set to 24 hours
+- Passwords are hashed using bcrypt
+
+This avoids server-side session storage and works well in containerized environments.
+
+---
+
+### Authorization (Ownership-Based)
+
+Authorization is implemented using resource ownership:
+
+- Projects can only be modified by their owner
+- Tasks can only be modified by the task creator or project owner
+
+Tradeoff:
+- No RBAC (role-based access control)
+- Would be added in a real system with roles like admin/member
+
+---
+
+### Database & Migrations
+
+- PostgreSQL is used for relational consistency
+- Alembic manages schema migrations (no auto-create tables)
+
+This ensures version-controlled schema changes.
+
+---
+
+### Tradeoffs & Scope Decisions
+
+- No refresh tokens → simpler auth flow
+- No caching → unnecessary for current scale
+- No background jobs → not required
+- No RBAC → ownership-based access sufficient
+
+---
+
+### Design Principles
+
+- Simplicity over overengineering
+- Explicit over implicit behavior
+- Clear separation of concerns
+
+---
+
 
 ## 3. Running Locally
 
 ### Prerequisites
 
--   Docker installed
+- Docker
 
 ### Steps
 
@@ -67,48 +105,128 @@ docker compose up --build
 
 ### Access
 
--   API: http://localhost:8000
--   Swagger Docs: http://localhost:8000/docs
+- API: http://localhost:8000
+- Swagger Docs: http://localhost:8000/docs
 
-------------------------------------------------------------------------
+---
 
 ## 4. Running Migrations
 
-Migrations run automatically on container startup using:
+Migrations run automatically on container startup.
 
-- alembic upgrade head
+Manual commands (if needed):
 
-------------------------------------------------------------------------
+```
+docker compose exec backend alembic upgrade head
+```
+To create a new migration:
+```
+docker compose exec backend alembic revision --autogenerate -m "message"
+```
 
-## 5. Test Credentials
+## 5. Seeding Data
 
-- Email: test@example.com 
-- Password: password123
+Seed data is included for quick testing.
 
-------------------------------------------------------------------------
+To run manually:
 
-## 6. API Reference
+Windows (PowerShell):
 
-Auth: 
-- POST /auth/register 
+```
+Get-Content backend/seed.sql | docker compose exec -T db psql -U postgres -d taskflow
+```
+
+macOS/Linux:
+
+```
+cat backend/seed.sql | docker compose exec -T db psql -U postgres -d taskflow
+```
+
+---
+
+## 6. Test Credentials
+
+Email: test@example.com  
+Password: password123
+
+---
+
+## 7. API Reference
+
+All endpoints (except `/auth/*`) require:
+
+```
+Authorization: Bearer <token>
+```
+
+### Login Example
+
+POST `/auth/login`
+
+Request:
+
+```
+{
+    "email": "test@example.com",
+    "password": "password123"
+}
+```
+Response:
+
+```
+{
+    "access_token": "<jwt>",
+    "token_type": "bearer"
+}
+```
+
+### Auth
+- POST /auth/register
 - POST /auth/login
 
-Projects: 
-- GET /projects 
-- POST /projects 
-- GET /projects/{id} 
-- PATCH /projects/{id} 
+### Projects
+- GET /projects?page=1&limit=10
+- POST /projects
+- GET /projects/{id}
+- PATCH /projects/{id}
 - DELETE /projects/{id}
+- GET /projects/{id}/stats
 
-Tasks: 
-- GET /projects/{id}/tasks 
-- POST /projects/{id}/tasks 
-- PATCH /tasks/{id} 
+### Tasks
+- GET /projects/{id}/tasks
+- POST /projects/{id}/tasks
+- PATCH /tasks/{id}
 - DELETE /tasks/{id}
 
-Authorization: Bearer token required for all non-auth endpoints
+## 8. Error Handling
 
-Error format: 
+All errors follow a consistent structure:
+
+### Unauthorized (401)
+
+```
+{
+  "error": "unauthorized"
+}
+```
+
+### Forbidden (403)
+
+```
+{
+  "error": "forbidden"
+}
+```
+### Not Found (404)
+
+```
+{
+  "error": "not found"
+}
+```
+
+### Validation Error (400)
+
 ```
 {
   "error": "validation failed",
@@ -117,70 +235,43 @@ Error format:
   }
 }
 ```
-------------------------------------------------------------------------
 
-## 7. What I'd Do With More Time
+---
 
--   Add refresh tokens
--   Add RBAC
--   Improve validation
--   Add tests
--   Add pagination
--   Add Redis caching
--   Improve logging
+## 8. What I'd Do With More Time
 
-------------------------------------------------------------------------
+- Implement RBAC
+- Add refresh token flow
+- Add tests
+- Improve pagination metadata
+- Add Redis caching
+- Add WebSocket support
 
-## 8. Docker & Environment
+---
 
--   docker-compose runs PostgreSQL and backend
--   Uses .env file
--   .env.example provided
+## 9. What I'd Do With More Time
 
-------------------------------------------------------------------------
+- Implement RBAC (role-based access control)
+- Add refresh token flow
+- Add integration tests
+- Improve pagination metadata (total count, pages)
+- Add Redis caching
+- Add WebSocket support for real-time updates
 
-## 9. Notes
+---
 
--   Alembic used for migrations
--   Passwords hashed with bcrypt
--   JWT secret via environment variables
+## 10. Docker & Environment
 
-------------------------------------------------------------------------
+- docker-compose runs PostgreSQL and backend
+- Uses `.env` file for configuration
+- `.env.example` is provided
 
-## 10. Submission
+---
 
-Run:
+## 11. Notes
 
-docker compose up
+- Alembic is used for migrations
+- Passwords are hashed using bcrypt
+- JWT secret is stored via environment variables
 
-------------------------------------------------------------------------
-
-## 11. Development Commands (Optional)
-
-- These were used during development to create and manage migrations.
-- All migrations are already included in the repository, and database schema is automatically applied on startup using Alembic.
-
-### Generate migrations
-```
-docker compose exec backend alembic revision --autogenerate -m "message"
-```
-Apply migrations manually (handled automatically on startup)
-
-```
-docker compose exec backend alembic upgrade head
-```
-
-Seed database manually (optional)
-
-Windows (PowerShell): 
-```
-Get-Content backend/seed.sql | docker compose exec -T db psql -U postgres -d taskflow
-```
-
-macOS/Linux equivalent:
-
-```
-cat backend/seed.sql | docker compose exec -T db psql -U postgres -d taskflow
-```
-------------------------------------------------------------------------
-Thank you for reviewing this submission.
+---
