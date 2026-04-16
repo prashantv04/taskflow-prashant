@@ -236,19 +236,6 @@ All errors follow a consistent structure:
 }
 ```
 
----
-
-## 8. What I'd Do With More Time
-
-- Implement RBAC
-- Add refresh token flow
-- Add tests
-- Improve pagination metadata
-- Add Redis caching
-- Add WebSocket support
-
----
-
 ## 9. What I'd Do With More Time
 
 - Implement RBAC (role-based access control)
